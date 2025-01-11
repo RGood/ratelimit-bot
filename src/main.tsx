@@ -147,7 +147,7 @@ Devvit.addTrigger({
 
     const key = `${type}:${authorId}`;
 
-    const windowStr = appSettings[`${type}-window`] as string;
+    const windowStr = (appSettings[`${type}-window`] as string).trim();
 
     // window string to ms
     const windowMs = parseDurationStr(windowStr, "ms");
@@ -165,8 +165,24 @@ Devvit.addTrigger({
       return;
     }
 
-    const response = (appSettings[`${type}-reply`] as string).trim();
+    let response = (appSettings[`${type}-reply`] as string).trim();
     if (!!response) {
+      response = response.replace(/{[^}]+}/g, match => {
+        switch (match) {
+          case "{comment_id}":
+            return type === "comment" ? contentId : match;
+          case "{limit}":
+            return contentLimit.toString();
+          case "{post_id}":
+            return type === "post" ? contentId : match;
+          case "{subreddit}":
+            return event.subreddit!.name;
+          case "{window}":
+            return windowStr;
+          default:
+            return match;
+        }
+      })
       try {
         const comment = await reddit.submitComment({
           id: contentId,
