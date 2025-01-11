@@ -36,7 +36,7 @@ Devvit.addSettings([
   },
   {
     name: "post-reply",
-    type: "string",
+    type: "paragraph",
     label: "Bot Reply on Post Removal",
     helpText: "Empty for no comment",
     defaultValue: "",
@@ -70,7 +70,7 @@ Devvit.addSettings([
   },
   {
     name: "comment-reply",
-    type: "string",
+    type: "paragraph",
     label: "Bot Reply on Comment Removal",
     helpText: "Empty for no comment",
     defaultValue: "",
