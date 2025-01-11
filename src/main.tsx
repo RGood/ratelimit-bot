@@ -8,72 +8,84 @@ Devvit.configure({
 
 Devvit.addSettings([
   {
-    name: "post-limit",
-    type: "number",
-    label: "Post Limit (0 = unlimited)",
-    defaultValue: 0,
-  },
-  {
-    name: "post-window",
-    type: "string",
-    label: "Posting Window (default 1d)",
-    helpText: "Duration string; e.g. 1d, 3h, 1h30m, 30m, 90s, etc",
-    defaultValue: "1d",
-    onValidate: (setting) => {
-      try {
-        const window = parseDurationStr(setting.value);
-        if(window === 0) {
-          return "Duration cannot resolve to 0s";
+    type: "group",
+    label: "Limit Posting",
+    fields: [
+      {
+        name: "post-limit",
+        type: "number",
+        label: "Post Limit (0 = unlimited)",
+        defaultValue: 0,
+      },
+      {
+        name: "post-window",
+        type: "string",
+        label: "Posting Window (default 1d)",
+        helpText: "Duration string; e.g. 1d, 3h, 1h30m, 30m, 90s, etc",
+        defaultValue: "1d",
+        onValidate: (setting) => {
+          try {
+            const window = parseDurationStr(setting.value);
+            if (window === 0) {
+              return "Duration cannot resolve to 0s";
+            }
+          } catch (e) {
+            if (e instanceof Error) {
+              return e.message;
+            } else {
+              return "Unknown validation error";
+            }
+          }
         }
-      } catch(e) {
-        if(e instanceof Error) {
-          return e.message;
-        } else {
-          return "Unknown validation error";
+      },
+      {
+        name: "post-reply",
+        type: "paragraph",
+        label: "Bot Reply on Post Removal",
+        helpText: "Empty for no comment",
+        defaultValue: "",
+      },
+    ]
+  },
+  {
+    type: "group",
+    label: "Limit Commenting",
+    fields: [
+      {
+        name: "comment-limit",
+        type: "number",
+        label: "Comment Limit (0 = unlimited)",
+        defaultValue: 0,
+      },
+      {
+        name: "comment-window",
+        type: "string",
+        label: "Commenting Window (default 1d)",
+        helpText: "Duration string; e.g. 1d, 3h, 1h30m, 30m, 90s, etc",
+        defaultValue: "1d",
+        onValidate: (setting) => {
+          try {
+            const window = parseDurationStr(setting.value);
+            if(window === 0) {
+              return "Duration cannot resolve to 0s";
+            }
+          } catch(e) {
+            if(e instanceof Error) {
+              return e.message;
+            } else {
+              return "Unknown validation error";
+            }
+          }
         }
-      }
-    }
-  },
-  {
-    name: "post-reply",
-    type: "paragraph",
-    label: "Bot Reply on Post Removal",
-    helpText: "Empty for no comment",
-    defaultValue: "",
-  },
-  {
-    name: "comment-limit",
-    type: "number",
-    label: "Comment Limit (0 = unlimited)",
-    defaultValue: 0,
-  },
-  {
-    name: "comment-window",
-    type: "string",
-    label: "Commenting Window (default 1d)",
-    helpText: "Duration string; e.g. 1d, 3h, 1h30m, 30m, 90s, etc",
-    defaultValue: "1d",
-    onValidate: (setting) => {
-      try {
-        const window = parseDurationStr(setting.value);
-        if(window === 0) {
-          return "Duration cannot resolve to 0s";
-        }
-      } catch(e) {
-        if(e instanceof Error) {
-          return e.message;
-        } else {
-          return "Unknown validation error";
-        }
-      }
-    }
-  },
-  {
-    name: "comment-reply",
-    type: "paragraph",
-    label: "Bot Reply on Comment Removal",
-    helpText: "Empty for no comment",
-    defaultValue: "",
+      },
+      {
+        name: "comment-reply",
+        type: "paragraph",
+        label: "Bot Reply on Comment Removal",
+        helpText: "Empty for no comment",
+        defaultValue: "",
+      },
+    ]
   },
 ]);
 
