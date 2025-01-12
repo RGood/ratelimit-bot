@@ -106,31 +106,33 @@ async function userIsMod({ reddit }: TriggerContext, userId: string, subredditNa
 }
 
 Devvit.addTrigger({
-  event: "PostCreate",
+  events: ["PostCreate", "CommentCreate"],
   async onEvent(event, context) {
     const { redis, reddit, settings } = context;
 
     console.log("Handling event:", JSON.stringify(event));
 
+    const type = event.type === "PostCreate" ? "post" : "comment";
+
     const authorId = event.author?.id;
-    if(!authorId) {
+    if (!authorId) {
       console.error("author ID missing");
       return;
     }
 
-    const contentId = event.post?.id;
-    if(!contentId) {
-      console.error("post ID missing");
+    const contentId = event.type === "PostCreate" ? event.post?.id : event.comment?.id;
+    if (!contentId) {
+      console.error(`${type} ID missing`);
       return;
     }
 
-    if(!event.subreddit?.name) {
+    if (!event.subreddit?.name) {
       console.error("subreddit name not present");
       return;
     }
 
-    if(await userIsMod(context, authorId, event.subreddit.name)) {
-      console.log("Ignoring moderator post:", contentId);
+    if (await userIsMod(context, authorId, event.subreddit.name)) {
+      console.log(`Ignoring moderator ${type}: ${contentId}`);
       return;
     }
 
@@ -138,14 +140,14 @@ Devvit.addTrigger({
 
     console.log("Settings:", JSON.stringify(appSettings));
 
-    const postLimit: number = appSettings["post-limit"] as number;
-    if(postLimit <= 0) {
+    const contentLimit: number = appSettings[`${type}-limit`] as number;
+    if (contentLimit <= 0) {
       return;
     }
 
-    const key = `post:${authorId}`;
+    const key = `${type}:${authorId}`;
 
-    const windowStr = appSettings["post-window"] as string;
+    const windowStr = appSettings[`${type}-window`] as string;
 
     // window string to ms
     const windowMs = parseDurationStr(windowStr, "ms");
@@ -155,107 +157,24 @@ Devvit.addTrigger({
     await redis.zRemRangeByScore(key, 0, expiredBefore);
     const count = await redis.zCard(key);
 
-    if(count < postLimit) {
+    if (count < contentLimit) {
       await redis.zAdd(key, {
         member: contentId,
         score: new Date().getTime(),
       });
-
       return;
     }
 
-    const response = appSettings["post-reply"] as string;
-    if(!!response) {
+    const response = (appSettings[`${type}-reply`] as string).trim();
+    if (!!response) {
       try {
         const comment = await reddit.submitComment({
           id: contentId,
           text: response,
         });
         comment.distinguish();
-      } catch(e) {
-        if(e instanceof Error) {
-          console.error(e.message);
-        } else {
-          console.error("unknown error submitting comment:", JSON.stringify(e));
-        }
-      }
-      
-    }
-
-    await reddit.remove(contentId, false);
-  },
-});
-
-Devvit.addTrigger({
-  event: "CommentCreate",
-  async onEvent(event, context) {
-    const { redis, reddit, settings } = context;
-
-    console.log("Handling event:", JSON.stringify(event));
-
-    const authorId = event.author?.id;
-    if(!authorId) {
-      console.error("author ID missing");
-      return;
-    }
-
-    const contentId = event.comment?.id;
-    if(!contentId) {
-      console.error("comment ID missing");
-      return;
-    }
-
-    if(!event.subreddit?.name) {
-      console.error("subreddit name not present");
-      return;
-    }
-
-
-    if(await userIsMod(context, authorId, event.subreddit.name)) {
-      console.log("Ignoring moderator comment:", contentId);
-      return;
-    }
-
-    const appSettings = await settings.getAll();
-    
-    console.log("Settings:", JSON.stringify(appSettings));
-
-    const commentLimit: number = appSettings["comment-limit"] as number;
-    if(commentLimit <= 0) {
-      return;
-    }
-
-    const key = `comment:${authorId}`;
-
-    const windowStr = appSettings["comment-window"] as string;
-
-    // window string to ms
-    const windowMs = parseDurationStr(windowStr, "ms");
-
-    const expiredBefore = new Date().getTime() - windowMs;
-
-    await redis.zRemRangeByScore(key, 0, expiredBefore);
-    const count = await redis.zCard(key);
-
-    if(count < commentLimit) {
-      await redis.zAdd(key, {
-        member: contentId,
-        score: new Date().getTime(),
-      });
-
-      return;
-    }
-
-    const response = appSettings["comment-reply"] as string;
-    if(!!response) {
-      try {
-        const comment = await reddit.submitComment({
-          id: contentId,
-          text: response,
-        });
-        comment.distinguish();
-      } catch(e) {
-        if(e instanceof Error) {
+      } catch (e) {
+        if (e instanceof Error) {
           console.error(e.message);
         } else {
           console.error("unknown error submitting comment:", JSON.stringify(e));
