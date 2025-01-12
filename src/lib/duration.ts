@@ -1,28 +1,28 @@
-const symbolToSecondMap = {
-    "": 1,
-    "ms": 0.001,
-    "s" : 1,
-    "m" : 60,
-    "h" : 60*60,
-    "d" : 60*60*24
+const UNIT_TO_MILLISECONDS = {
+    "": 1000,
+    "ms": 1,
+    "s" : 1000,
+    "m" : 1000*60,
+    "h" : 1000*60*60,
+    "d" : 1000*60*60*24
 };
 
-type UNITS = keyof typeof symbolToSecondMap;
+type UNITS = keyof typeof UNIT_TO_MILLISECONDS;
 
 function validateUnitType(unit: string): asserts unit is UNITS {
-    if (!(unit in symbolToSecondMap)) {
+    if (!(unit in UNIT_TO_MILLISECONDS)) {
         throw new Error(`unknown unit: '${unit}'`);
     }
 }
 
-function getUnitSeconds(unit: string) {
+function getUnitMilliseconds(unit: string) {
     validateUnitType(unit);
-    return symbolToSecondMap[unit];
+    return UNIT_TO_MILLISECONDS[unit];
 }
 
-export function parseDurationStr(timeStr: string | undefined, outputUnit = "s") {
+export function parseDurationStr(timeStr: string | undefined, outputUnit = "ms") {
     timeStr = timeStr || "";
-    const outputScale = getUnitSeconds(outputUnit);
+    const outputScale = getUnitMilliseconds(outputUnit);
 
     var total = 0;
 
@@ -40,7 +40,7 @@ export function parseDurationStr(timeStr: string | undefined, outputUnit = "s") 
             decPart += (+ char) / decPlace;
         } else if((+ char) >= 0 && (+ char) <= 9) {
             if(!parsingNum) {
-                const scale = getUnitSeconds(unit);
+                const scale = getUnitMilliseconds(unit);
 
                 total += (numPart * scale) + decPart;
 
@@ -63,7 +63,7 @@ export function parseDurationStr(timeStr: string | undefined, outputUnit = "s") 
 
     }
 
-    const scale = getUnitSeconds(unit);
+    const scale = getUnitMilliseconds(unit);
 
     total += (numPart * scale) + decPart;
 
